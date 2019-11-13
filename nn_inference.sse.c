@@ -4,11 +4,21 @@
 #include "nn_common.private.h"
 
 // The input feature normalization factors (from the Python Indigo).
-// The additional (1<<14) is because we scaled deliver_rate and send_rate by 16k to make them integers
 //
 static const float x_normalize_factor[NUM_FEATURES] =
 {
-    1.0f / 200.0, 1.0f / (200.0 * (1 << 14)), 1.0f / (200.0 * (1 << 14)), 1.0f / 5000
+    // The additional 1000 is because Python Indigo expects ms, we have us
+    //
+    1.0f / (200.0 * 1000),
+    // The (1<<14) is because we scaled up by 16K.
+    // The 1000 is the ms-to-us conversion.
+    // The 0.008 is the additional constant factor used in Python Indigo.
+    //
+    (1000.0f * 0.008) / (200.0 * (1 << 14)),
+    (1000.0f * 0.008) / (200.0 * (1 << 14)),
+    // No special modifier for this one
+    //
+    1.0f / 5000
 };
 
 static void __normalize_input_features(struct indigo_nn* nn,
