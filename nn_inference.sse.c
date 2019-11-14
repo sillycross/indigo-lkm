@@ -1,5 +1,6 @@
-#include "inference.h"
+#include "nn_inference.h"
 #include "indigo_utils.h"
+#include "training_output.h"
 
 #include "nn_common.private.h"
 
@@ -89,10 +90,12 @@ static int WARN_UNUSED __take_action(int cwnd, int action)
     return new_cwnd;
 }
 
-int WARN_UNUSED nn_inference(struct indigo_nn* nn,
+int WARN_UNUSED nn_inference(u64 timestamp_us,
+                             struct indigo_nn* nn,
                              const struct nn_input_features* input_features,
                              int cwnd)
 {
+    float* input_vec = indigo_nn_get_address_for_argument(nn, 0);
     float* output_vec;
     float* lstm_state_out;
     float* lstm_state_in;
@@ -116,6 +119,22 @@ int WARN_UNUSED nn_inference(struct indigo_nn* nn,
             action_to_take = i;
         }
     }
+
+#ifdef GEN_TRAINING_OUTPUTS
+    // Log the training output
+    // Line format: timestamp, cur_cwnd, action_taken, input_vector
+    //
+    indigo_training_output_write("%llu %d %d", timestamp_us, cwnd, action_to_take);
+    for (i = 0; i < NUM_FEATURES + NUM_ACTIONS; i++)
+    {
+        // Log the floats as binary values because we cannot print float easily in kernel.
+        // We can parse them back to float when we process the file.
+        //
+        u32* as_u32 = (u32*)(input_vec + i);
+        indigo_training_output_write(" %u", *as_u32);
+    }
+    indigo_training_output_write("\n");
+#endif
 
     // Setup LSTM state for next inference
     //

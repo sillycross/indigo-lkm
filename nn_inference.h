@@ -19,6 +19,7 @@ int WARN_UNUSED nn_init(struct indigo_nn* nn);
 // Execute one inference on given input features, returns new cwnd
 // Must be called in kernel_fpu_begin/end section
 //
-int WARN_UNUSED nn_inference(struct indigo_nn* nn,
+int WARN_UNUSED nn_inference(u64 timestamp_us,
+                             struct indigo_nn* nn,
                              const struct nn_input_features* input_features,
                              int cwnd);

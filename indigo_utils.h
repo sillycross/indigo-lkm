@@ -5,14 +5,27 @@
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
 #include <asm-generic/int-ll64.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/proc_fs.h>
+#include <linux/sched.h>
+#include <linux/uaccess.h>
+#include <asm/uaccess.h>
 
+// Uncomment for production build (training and debug info are disabled)
+//
+// #define INDIGO_PRODUCTION
+
+#ifndef INDIGO_PRODUCTION
 // Uncomment to enable debug information and debug asserts
 //
-#define INDIGO_DEBUG
-
+#   define INDIGO_DEBUG
 // Uncomment to enable verbose debug information
 //
-#define INDIGO_DEBUG_VERBOSE
+#   define INDIGO_DEBUG_VERBOSE
+#endif  // INDIGO_PRODUCTION
 
 #ifdef INDIGO_DEBUG
 // Upon failing an assert, we trace an alert, and stop all future tracing to

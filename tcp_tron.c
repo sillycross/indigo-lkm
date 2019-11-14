@@ -1,7 +1,8 @@
 #include "indigo_utils.h"
 
 #include "indigo_nn.generated.h"
-#include "inference.h"
+#include "nn_inference.h"
+#include "training_output.h"
 
 #include <linux/module.h>
 #include <net/tcp.h>
@@ -24,6 +25,7 @@ struct indigo_state
     u8 m_rtt_info_initialized;
     u8 m_deliver_rate_ewma_initialized;
     u8 m_decision_timestamp_initialized;
+    u8 m_first_timestamp_initialized;
 
     // The packet # that signals the end of this RTT
     //
@@ -52,10 +54,23 @@ struct indigo_state
     //
     u64 m_next_decision_timestamp;
 
+    // The timestamp that the congestion control algorithm is first called
+    //
+    u64 m_first_timestamp;
+
     // The neural network
     //
     struct indigo_nn nn;
 };
+
+static void __update_initial_timestamp(struct indigo_state* indigo, u64 timestamp_us)
+{
+    if (!indigo->m_first_timestamp_initialized)
+    {
+        indigo->m_first_timestamp_initialized = 1;
+        indigo->m_first_timestamp = timestamp_us;
+    }
+}
 
 static void __update_delay_ewma(struct indigo_state* indigo, u32 rtt_us)
 {
@@ -155,7 +170,7 @@ static void __update_cwnd_if_needed(struct indigo_state* indigo,
                             tp, features.delay_ewma, features.send_rate_ewma_sf16k, features.deliver_rate_ewma_sf16k, features.cur_cwnd);
 
         kernel_fpu_begin();
-        tp->snd_cwnd = nn_inference(&indigo->nn, &features, tp->snd_cwnd);
+        tp->snd_cwnd = nn_inference(cur_timestamp_us - indigo->m_first_timestamp, &indigo->nn, &features, tp->snd_cwnd);
         kernel_fpu_end();
 
         indigo->m_next_decision_timestamp = cur_timestamp_us + INDIGO_DECISION_INTERVAL_US;
@@ -172,6 +187,7 @@ static void indigo_main(struct sock *sk, const struct rate_sample* rs)
         return; /* Not a valid observation */
     }
 
+    __update_initial_timestamp(indigo, tp->tcp_mstamp);
     __update_delay_ewma(indigo, rs->interval_us);
     __update_send_rate_ewma(indigo, rs->interval_us, tp->snd_nxt - tp->snd_una);
     __update_deliver_rate_ewma(indigo, tp, rs);
@@ -248,12 +264,17 @@ static struct tcp_congestion_ops tcp_indigo_cong_ops __read_mostly = {
 static int __init indigo_register(void)
 {
     BUILD_BUG_ON(sizeof(struct indigo_state) > ICSK_CA_PRIV_SIZE);
+    if (!indigo_training_output_constructor())
+    {
+        return -EINVAL;
+    }
     TRACE_DEBUG("Registering Indigo Kernel Module..");
     return tcp_register_congestion_control(&tcp_indigo_cong_ops);
 }
 
 static void __exit indigo_unregister(void)
 {
+    indigo_training_output_destructor();
     TRACE_DEBUG("Unregistering Indigo Kernel Module..");
     tcp_unregister_congestion_control(&tcp_indigo_cong_ops);
 }

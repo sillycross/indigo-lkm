@@ -1,4 +1,4 @@
-#include "inference.h"
+#include "nn_inference.h"
 #include "indigo_utils.h"
 
 #include "nn_common.private.h"

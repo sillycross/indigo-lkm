@@ -4,7 +4,8 @@ indigo-objs += indigo_utils.o \
                math.sse.o \
                print_float.sse.o \
                nn_inference.sse.o \
-               nn_init.o \
+               nn_inference.o \
+               training_output.o \
                nn/libgraph.pic.a
                
 ccflags-y := -g -O0
