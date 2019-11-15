@@ -6,14 +6,20 @@ const static char* x_training_output_name = "indigo_training_output";
 static char* g_buffer = NULL;
 static ssize_t g_length;
 static struct proc_dir_entry* g_entry = NULL;
+static DEFINE_SPINLOCK(g_spinlock);
 
+// Reader is supposed to be called after there are no outstanding sockets running.
+// Note that this is only true if the server has quited (the client having quited
+// is not enough, since there may still be unsent data in kernel buffer)
+//
 static ssize_t __training_output_reader(struct file* file,
                                         char __user* ubuf,
                                         size_t count,
                                         loff_t* ppos)
 {
+    size_t len = READ_ONCE(g_length);
     ssize_t bytes_read;
-    ssize_t max_bytes = g_length - *ppos;
+    ssize_t max_bytes = len - *ppos;
     max_bytes = max_t(ssize_t, max_bytes, 0);
     max_bytes = min_t(ssize_t, max_bytes, (ssize_t)count);
     // copy_to_user returns the # of bytes that CANNOT be copied
@@ -23,6 +29,8 @@ static ssize_t __training_output_reader(struct file* file,
     return bytes_read;
 }
 
+// Clear the output file by writing a 'c' into the file
+//
 static ssize_t __training_output_clear(struct file *file,
                                        const char __user *ubuf,
                                        size_t count,
@@ -36,8 +44,10 @@ static ssize_t __training_output_clear(struct file *file,
         TRACE_INFO("Unknown instruction to indigo training output. Ignored.");
         return -EINVAL;
     }
-    TRACE_INFO("Indigo training output cleared.");
+    indigo_training_output_get_lock();
     g_length = 0;
+    indigo_training_output_unlock();
+    TRACE_INFO("Indigo training output cleared.");
     *ppos += count;
     return count;
 }
@@ -68,6 +78,20 @@ int WARN_UNUSED indigo_training_output_constructor(void)
     TRACE_INFO("Training outputs initialized successfully at /proc/%s", x_training_output_name);
 #endif
     return 1;
+}
+
+void indigo_training_output_get_lock(void)
+{
+#ifdef GEN_TRAINING_OUTPUTS
+    spin_lock(&g_spinlock);
+#endif
+}
+
+void indigo_training_output_unlock(void)
+{
+#ifdef GEN_TRAINING_OUTPUTS
+    spin_unlock(&g_spinlock);
+#endif
 }
 
 void indigo_training_output_write(const char* format, ...)

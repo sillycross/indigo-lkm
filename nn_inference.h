@@ -4,6 +4,14 @@
 
 struct indigo_nn;
 
+// Information needed for nn_inference to write training log
+//
+struct nn_training_log_info
+{
+    u64 socket_id;
+    u64 timestamp;
+};
+
 struct nn_input_features
 {
     u64 delay_ewma;
@@ -19,7 +27,7 @@ int WARN_UNUSED nn_init(struct indigo_nn* nn);
 // Execute one inference on given input features, returns new cwnd
 // Must be called in kernel_fpu_begin/end section
 //
-int WARN_UNUSED nn_inference(u64 timestamp_us,
+int WARN_UNUSED nn_inference(struct nn_training_log_info* log_info,
                              struct indigo_nn* nn,
                              const struct nn_input_features* input_features,
                              int cwnd);

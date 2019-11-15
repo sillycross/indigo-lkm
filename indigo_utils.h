@@ -13,6 +13,7 @@
 #include <linux/sched.h>
 #include <linux/uaccess.h>
 #include <asm/uaccess.h>
+#include <linux/spinlock.h>
 
 // Uncomment for production build (training and debug info are disabled)
 //
@@ -21,10 +22,10 @@
 #ifndef INDIGO_PRODUCTION
 // Uncomment to enable debug information and debug asserts
 //
-#   define INDIGO_DEBUG
+//#   define INDIGO_DEBUG
 // Uncomment to enable verbose debug information
 //
-#   define INDIGO_DEBUG_VERBOSE
+//#   define INDIGO_DEBUG_VERBOSE
 #endif  // INDIGO_PRODUCTION
 
 #ifdef INDIGO_DEBUG

@@ -18,6 +18,8 @@
 //
 #define INDIGO_DECISION_INTERVAL_US 10000
 
+static u32 g_socket_id = 0;
+
 struct indigo_state
 {
     u8 m_delay_ewma_initialized;
@@ -26,6 +28,10 @@ struct indigo_state
     u8 m_deliver_rate_ewma_initialized;
     u8 m_decision_timestamp_initialized;
     u8 m_first_timestamp_initialized;
+
+    // The unique socket ordinal of this socket, for identification purpose in training output
+    //
+    u32 m_socket_id;
 
     // The packet # that signals the end of this RTT
     //
@@ -143,6 +149,7 @@ static void __update_cwnd_if_needed(struct indigo_state* indigo,
                                     struct tcp_sock* tp)
 {
     u64 cur_timestamp_us = tp->tcp_mstamp;
+    struct nn_training_log_info log_info;
     struct nn_input_features features;
 
     // If we have not made a decision but we have enough knowledge
@@ -161,6 +168,8 @@ static void __update_cwnd_if_needed(struct indigo_state* indigo,
     //
     if (indigo->m_decision_timestamp_initialized && cur_timestamp_us >= indigo->m_next_decision_timestamp)
     {
+        log_info.socket_id = indigo->m_socket_id;
+        log_info.timestamp = cur_timestamp_us - indigo->m_first_timestamp;
         features.delay_ewma = indigo->m_delay_ewma;
         features.send_rate_ewma_sf16k = indigo->m_send_rate_ewma_sf16k;
         features.deliver_rate_ewma_sf16k = indigo->m_deliver_rate_ewma_sf16k;
@@ -170,7 +179,7 @@ static void __update_cwnd_if_needed(struct indigo_state* indigo,
                             tp, features.delay_ewma, features.send_rate_ewma_sf16k, features.deliver_rate_ewma_sf16k, features.cur_cwnd);
 
         kernel_fpu_begin();
-        tp->snd_cwnd = nn_inference(cur_timestamp_us - indigo->m_first_timestamp, &indigo->nn, &features, tp->snd_cwnd);
+        tp->snd_cwnd = nn_inference(&log_info, &indigo->nn, &features, tp->snd_cwnd);
         kernel_fpu_end();
 
         indigo->m_next_decision_timestamp = cur_timestamp_us + INDIGO_DECISION_INTERVAL_US;
@@ -212,7 +221,17 @@ static void indigo_init(struct sock *sk)
     struct indigo_state* indigo = inet_csk_ca(sk);
 
     TRACE_DEBUG("[Indigo Socket %p] Initializing socket using Indigo..", sk);
+
+    // Assign the unique socket id to indigo_state
+    //
+    indigo->m_socket_id = __sync_fetch_and_add(&g_socket_id, 1);
+
+    // Set the initial cwnd to 20
+    //
     tp->snd_cwnd = 20;
+
+    // Initialize the NN
+    //
     if (!nn_init(&indigo->nn))
     {
         TRACE_INFO("Failed to initialize NN: OOM");

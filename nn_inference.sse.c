@@ -90,7 +90,7 @@ static int WARN_UNUSED __take_action(int cwnd, int action)
     return new_cwnd;
 }
 
-int WARN_UNUSED nn_inference(u64 timestamp_us,
+int WARN_UNUSED nn_inference(struct nn_training_log_info* log_info,
                              struct indigo_nn* nn,
                              const struct nn_input_features* input_features,
                              int cwnd)
@@ -121,10 +121,12 @@ int WARN_UNUSED nn_inference(u64 timestamp_us,
     }
 
 #ifdef GEN_TRAINING_OUTPUTS
+    indigo_training_output_get_lock();
     // Log the training output
     // Line format: timestamp, cur_cwnd, action_taken, input_vector
     //
-    indigo_training_output_write("%llu %d %d", timestamp_us, cwnd, action_to_take);
+    indigo_training_output_write("%llu %llu %d %d",
+                                 log_info->socket_id, log_info->timestamp, cwnd, action_to_take);
     for (i = 0; i < NUM_FEATURES + NUM_ACTIONS; i++)
     {
         // Log the floats as binary values because we cannot print float easily in kernel.
@@ -134,6 +136,7 @@ int WARN_UNUSED nn_inference(u64 timestamp_us,
         indigo_training_output_write(" %u", *as_u32);
     }
     indigo_training_output_write("\n");
+    indigo_training_output_unlock();
 #endif
 
     // Setup LSTM state for next inference
