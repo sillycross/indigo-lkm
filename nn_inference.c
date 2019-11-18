@@ -18,7 +18,7 @@ int WARN_UNUSED nn_init(struct indigo_nn* nn)
     // Initialize augmented features.
     // The initial prev_action = NUM_ACTIONS - 1 (the *2.0 choice)
     //
-    Assert(indigo_nn_get_argument_size_bytes(0) == (NUM_FEATURES + NUM_ACTIONS) * sizeof(float));
+    Assert(indigo_nn_get_argument_size_bytes(0) == NUM_FEATURES * sizeof(float));
     __setup_augmented_features(nn, NUM_ACTIONS - 1);
 
     // Initialize LSTM state to 0

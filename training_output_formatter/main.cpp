@@ -2,25 +2,55 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const int input_vec_len = 9;
-const int max_time_series_len = 1000;
+#include "take_action.h"
+#include "../nn_params.h"
+#include "cnpy/cnpy.h"
+
+const int REQUIRED_TIME_SERIES_LEN = 1000;
 
 struct Record
 {
 	unsigned long long ts;
 	int cwnd;
 	int action;
-	float ivs[input_vec_len];
+	float ivs[NUM_FEATURES];
 };
 
 std::map<int, std::vector<Record> > all;
 
-int main()
+int get_expert_action(int cwnd, int expert_cwnd)
 {
+	int min_diff = 0x7fffffff;
+	int min_diff_i = -1;
+	for (int i = 0; i < NUM_ACTIONS; i++)
+	{
+		int new_cwnd = take_action(cwnd, i);
+		if (abs(new_cwnd - expert_cwnd) < min_diff)
+		{
+			assert(new_cwnd > 0);
+			min_diff = abs(new_cwnd - expert_cwnd);
+			min_diff_i = i;
+		}
+	}
+	assert(min_diff_i != -1);
+	return min_diff_i;
+}
+
+int main(int argc, char** argv)
+{
+	if (argc != 3)
+	{
+		printf("Usage: ./format_output [expert_cwnd] [path_to_store_formatted_output]\n");
+		return 1;
+	}
+	int expert_cwnd = stoi(std::string(argv[1]));
+	std::string output_file = argv[2];	
+	
+	//FILE* p = fopen("b.txt", "r");
 	FILE* p = fopen("/proc/indigo_training_output", "r");
 	if (p == nullptr)
 	{
-		assert(!"Cannot open file");
+		assert(!"Cannot open input file");
 	}
 	const size_t _n = 100000;
 	size_t n = _n;
@@ -49,29 +79,63 @@ int main()
 		{
 			ptr += offset;
 			float fv = *((float*)&value);
+			assert(num < NUM_FEATURES);
 			r.ivs[num] = fv;
 			num++;
-			assert(num <= input_vec_len);
 		}
-		assert(num == input_vec_len);
+		assert(num == NUM_FEATURES);
 		all[id].push_back(r);
 	}
+	
+	std::vector<float> all_input_vectors;
+	std::vector<int> all_expert_actions;
+	
+	size_t num_records = 0;
 	for (auto it = all.begin(); it != all.end(); it++)
 	{
-		int len = (int)it->second.size();
-		len = std::min(len, max_time_series_len);
-		printf("%d\n", len);
-		for (int k = 0; k < len; k++)
+		{
+			int len = (int)it->second.size();
+			if (len < REQUIRED_TIME_SERIES_LEN)
+			{
+				printf("Warning: a trace has insufficient length %d, discarded (expert_cwnd = %d, output_file = %s)\n",
+					   len, expert_cwnd, output_file.c_str());
+				continue;
+			}
+		}
+		
+		num_records++;
+		for (int k = 0; k < REQUIRED_TIME_SERIES_LEN; k++)
 		{
 			Record r = it->second[k];
-			printf("%llu %d %d", r.ts, r.cwnd, r.action);
-			for (int i = 0; i < input_vec_len; i++)
+			int expert_action = get_expert_action(r.cwnd, expert_cwnd);
+			
+			all_expert_actions.push_back(expert_action);
+			for (int i = 0; i < NUM_FEATURES; i++)
 			{
-				printf(" %.8e", r.ivs[i]);
+				all_input_vectors.push_back(r.ivs[i]);
 			}
-			printf("\n");
 		}
 	}
+	
+	assert(all_expert_actions.size() == num_records * REQUIRED_TIME_SERIES_LEN);
+	assert(all_input_vectors.size() == num_records * REQUIRED_TIME_SERIES_LEN * NUM_FEATURES);
+	
+	printf("Processed %d time series. Writing output file..\n", (int)num_records);
+	
+	cnpy::npz_save(output_file.c_str(),
+	               "expert_actions",
+	               &all_expert_actions[0],
+	               {num_records, REQUIRED_TIME_SERIES_LEN} /*shape*/,
+	               "w" /*overwrite*/);
+	               
+	cnpy::npz_save(output_file.c_str(),
+	               "input_vectors",
+	               &all_input_vectors[0],
+	               {num_records, REQUIRED_TIME_SERIES_LEN, NUM_FEATURES} /*shape*/,
+	               "a" /*append*/);      
+	               
+	printf("Done.\n");
+	          
 	return 0;
 }
 

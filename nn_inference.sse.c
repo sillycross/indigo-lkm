@@ -3,10 +3,11 @@
 #include "training_output.h"
 
 #include "nn_common.private.h"
+#include "nn_take_actions.h"
 
 // The input feature normalization factors (from the Python Indigo).
 //
-static const float x_normalize_factor[NUM_FEATURES] =
+static const float x_normalize_factor[4] =
 {
     // The additional 1000 is because Python Indigo expects ms, we have us
     //
@@ -30,64 +31,6 @@ static void __normalize_input_features(struct indigo_nn* nn,
     input_vec[1] = input_features->deliver_rate_ewma_sf16k * x_normalize_factor[1];
     input_vec[2] = input_features->send_rate_ewma_sf16k * x_normalize_factor[2];
     input_vec[3] = input_features->cur_cwnd * x_normalize_factor[3];
-}
-
-#define CWND_MIN_LIMIT 4
-#define CWND_MAX_LIMIT 1000000
-
-// Actions: ["/2.0", "-10.0", "+0.0", "+10.0", "*2.0"]
-//
-static int WARN_UNUSED __take_action(int cwnd, int action)
-{
-    int new_cwnd;
-    Assert(0 <= action && action < NUM_ACTIONS);
-    switch (action)
-    {
-    case 0:
-    {
-        new_cwnd = cwnd >> 1;
-        break;
-    }
-    case 1:
-    {
-        new_cwnd = cwnd - 10;
-        break;
-    }
-    case 2:
-    {
-        new_cwnd = cwnd;
-        break;
-    }
-    case 3:
-    {
-        new_cwnd = cwnd + 10;
-        break;
-    }
-    case 4:
-    {
-        new_cwnd = cwnd * 2;
-        break;
-    }
-    default:
-    {
-        Assert(0);
-        __builtin_unreachable();
-    }
-    }
-    if (new_cwnd < CWND_MIN_LIMIT)
-    {
-        TRACE_DEBUG("NN decision attempted to reduce cwnd from %d to %d. Clamped cwnd to %d.",
-                    cwnd, new_cwnd, CWND_MIN_LIMIT);
-        new_cwnd = CWND_MIN_LIMIT;
-    }
-    if (new_cwnd > CWND_MAX_LIMIT)
-    {
-        TRACE_DEBUG("NN decision attempted to raise cwnd from %d to %d. Clamped cwnd to %d.",
-                     cwnd, new_cwnd, CWND_MAX_LIMIT);
-        new_cwnd = CWND_MAX_LIMIT;
-    }
-    TRACE_DEBUG_VERBOSE("NN decision: cwnd from %d to %d", cwnd, new_cwnd);
-    return new_cwnd;
 }
 
 int WARN_UNUSED nn_inference(struct nn_training_log_info* log_info,
@@ -127,7 +70,7 @@ int WARN_UNUSED nn_inference(struct nn_training_log_info* log_info,
     //
     indigo_training_output_write("%llu %llu %d %d",
                                  log_info->socket_id, log_info->timestamp, cwnd, action_to_take);
-    for (i = 0; i < NUM_FEATURES + NUM_ACTIONS; i++)
+    for (i = 0; i < NUM_FEATURES; i++)
     {
         // Log the floats as binary values because we cannot print float easily in kernel.
         // We can parse them back to float when we process the file.
