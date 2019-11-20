@@ -1,0 +1,6 @@
+This is a utility tool that sanity checks the correctness of the NN by
+printing the output of the NN on the input defined as
+	input_vec[i] = 0.05 * i + 0.01
+with zeroed LSTM state. Python code can check the output to make sure 
+the NN is built correctly.
+
