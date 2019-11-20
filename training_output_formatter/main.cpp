@@ -6,8 +6,6 @@
 #include "../nn_params.h"
 #include "cnpy/cnpy.h"
 
-const int REQUIRED_TIME_SERIES_LEN = 1000;
-
 struct Record
 {
 	unsigned long long ts;
@@ -38,13 +36,14 @@ int get_expert_action(int cwnd, int expert_cwnd)
 
 int main(int argc, char** argv)
 {
-	if (argc != 3)
+	if (argc != 4)
 	{
-		printf("Usage: ./format_output [expert_cwnd] [path_to_store_formatted_output]\n");
+		printf("Usage: ./format_output [time_series_len] [expert_cwnd] [path_to_store_formatted_output]\n");
 		return 1;
 	}
-	int expert_cwnd = stoi(std::string(argv[1]));
-	std::string output_file = argv[2];	
+	int time_series_len = stoi(std::string(argv[1]));
+	int expert_cwnd = stoi(std::string(argv[2]));
+	std::string output_file = argv[3];	
 	
 	//FILE* p = fopen("b.txt", "r");
 	FILE* p = fopen("/proc/indigo_training_output", "r");
@@ -95,7 +94,7 @@ int main(int argc, char** argv)
 	{
 		{
 			int len = (int)it->second.size();
-			if (len < REQUIRED_TIME_SERIES_LEN)
+			if (len < time_series_len)
 			{
 				printf("Warning: a trace has insufficient length %d, discarded (expert_cwnd = %d, output_file = %s)\n",
 					   len, expert_cwnd, output_file.c_str());
@@ -104,7 +103,7 @@ int main(int argc, char** argv)
 		}
 		
 		num_records++;
-		for (int k = 0; k < REQUIRED_TIME_SERIES_LEN; k++)
+		for (int k = 0; k < time_series_len; k++)
 		{
 			Record r = it->second[k];
 			int expert_action = get_expert_action(r.cwnd, expert_cwnd);
@@ -117,21 +116,21 @@ int main(int argc, char** argv)
 		}
 	}
 	
-	assert(all_expert_actions.size() == num_records * REQUIRED_TIME_SERIES_LEN);
-	assert(all_input_vectors.size() == num_records * REQUIRED_TIME_SERIES_LEN * NUM_FEATURES);
+	assert(all_expert_actions.size() == num_records * time_series_len);
+	assert(all_input_vectors.size() == num_records * time_series_len * NUM_FEATURES);
 	
 	printf("Processed %d time series. Writing output file..\n", (int)num_records);
 	
 	cnpy::npz_save(output_file.c_str(),
 	               "expert_actions",
 	               &all_expert_actions[0],
-	               {num_records, REQUIRED_TIME_SERIES_LEN} /*shape*/,
+	               {num_records, time_series_len} /*shape*/,
 	               "w" /*overwrite*/);
 	               
 	cnpy::npz_save(output_file.c_str(),
 	               "input_vectors",
 	               &all_input_vectors[0],
-	               {num_records, REQUIRED_TIME_SERIES_LEN, NUM_FEATURES} /*shape*/,
+	               {num_records, time_series_len, NUM_FEATURES} /*shape*/,
 	               "a" /*append*/);      
 	               
 	printf("Done.\n");

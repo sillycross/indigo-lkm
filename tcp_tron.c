@@ -226,9 +226,9 @@ static void indigo_init(struct sock *sk)
     //
     indigo->m_socket_id = __sync_fetch_and_add(&g_socket_id, 1);
 
-    // Set the initial cwnd to 20
+    // Set the initial cwnd to 5
     //
-    tp->snd_cwnd = 20;
+    tp->snd_cwnd = 5;
 
     // Initialize the NN
     //

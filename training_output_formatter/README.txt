@@ -1,11 +1,13 @@
 This is a utility tool that processes the action log of Indigo and generates data for training.
 
 It reads input from /proc/indigo_training_output (where Indigo writes its action log into), 
-and takes 2 additional parameters: expert_cwnd, the expert congestion window size (it assumes 
-that all the log has the same expert_cwnd), and the .npz file name to write the generated training dataset.
-E.g. to parse data collected from a 20ms delay 12Mbits bw link (so its expert_cwnd = 40), one should use: 
+and takes 3 additional parameters: (1) T, the required time series length, (2) expert_cwnd, 
+the expert congestion window size (it assumes that all the log has the same expert_cwnd), 
+and (3) the .npz file name to write the generated training dataset.
+E.g. to parse data collected from a 20ms delay 12Mbits bw link (so its expert_cwnd = 40), 
+with a required time series length of 1000, one should use: 
 
-./format_output 40 out.npz
+./format_output 1000 40 out.npz
 
 
 Suppose the time series length is T, and the input vector of the NN has length m. 
