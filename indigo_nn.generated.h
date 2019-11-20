@@ -2,7 +2,9 @@
 //
 
 #pragma once
+#ifndef FOR_SANITY_CHECKER
 #include "indigo_utils.h"
+#endif
 
 void __xla___graph(
 	void* result, const void* run_options,
@@ -10,20 +12,20 @@ void __xla___graph(
 
 // Buffer Layout Information
 //
-static const int ____indigo_nn_x_numBuffers = 20;
-static const int ____indigo_nn_x_bufferOffsets[20] = {
-	-1, -1, 0, -1, -1, -1, -1, -1, -1, 256, 512, 576, -1, 640, -1, -1, -1, -1, -1, 704
+static const int ____indigo_nn_x_numBuffers = 19;
+static const int ____indigo_nn_x_bufferOffsets[19] = {
+	-1, -1, 0, -1, -1, -1, -1, -1, -1, -1, 256, 512, 576, 640, -1, -1, -1, -1, 704
 };
-static const int ____indigo_nn_x_bufferSizes[20] = {
-	-1, -1, 256, -1, -1, -1, -1, -1, -1, 256, 36, 20, -1, 16, -1, -1, -1, -1, -1, 1712
+static const int ____indigo_nn_x_bufferSizes[19] = {
+	-1, -1, 256, -1, -1, -1, -1, -1, -1, -1, 256, 36, 20, 16, -1, -1, -1, -1, 2232
 };
-static const int ____indigo_nn_x_bufferLength = 2432;
+static const int ____indigo_nn_x_bufferLength = 2944;
 
 // Parameters Layout Information
 //
 static const int ____indigo_nn_x_numArgs = 2;
 static const int ____indigo_nn_x_argIndexes[2] = {
-	10, 9
+	11, 10
 };
 static const int ____indigo_nn_x_numResults = 2;
 static const int ____indigo_nn_x_resultIndexArrayIndex = 13;
@@ -61,9 +63,9 @@ static inline float* indigo_nn_get_address_for_result(struct indigo_nn* nn, int 
 static inline int WARN_UNUSED indigo_nn_constructor(struct indigo_nn* nn) {
 	int i;
 	uintptr_t start;
-	nn->m_bufferList = (void**)kmalloc(____indigo_nn_x_bufferLength + 224, GFP_NOWAIT);
+	nn->m_bufferList = (void**)kmalloc(____indigo_nn_x_bufferLength + 216, GFP_NOWAIT);
 	if (nn->m_bufferList == NULL) { return 0; }
-	start = ((uintptr_t)(nn->m_bufferList)) + 160;
+	start = ((uintptr_t)(nn->m_bufferList)) + 152;
 	start = (start + 63) >> 6 << 6;
 	for (i = 0; i < ____indigo_nn_x_numBuffers; i++) {
 		if(____indigo_nn_x_bufferOffsets[i] == -1) {

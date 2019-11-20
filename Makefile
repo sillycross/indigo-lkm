@@ -18,6 +18,7 @@ all: indigo_nn.generated.h
 	# They must be provided as special '_shipped' binary blob.
 	cp nn/libgraph.pic.a nn/libgraph_hack.o_shipped
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	gcc sanity_check_nn/main.c nn/libgraph.pic.a -o sanity_checker -lm
 	
 indigo_nn.generated.h: nn/graph.h nn/libgraph.pic.a
 	cp nn/* tf_converter/input
@@ -26,4 +27,4 @@ indigo_nn.generated.h: nn/graph.h nn/libgraph.pic.a
 	
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
- 
+

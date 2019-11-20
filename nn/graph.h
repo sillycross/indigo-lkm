@@ -55,8 +55,8 @@ extern "C" void __xla___graph(
 // Memory stats:
 //   arg bytes total:    292
 //   arg bytes aligned:  320
-//   temp bytes total:   2004
-//   temp bytes aligned: 2112
+//   temp bytes total:   2524
+//   temp bytes aligned: 2624
 class Graph final : public tensorflow::XlaCompiledCpuFunction {
  public:
   // Number of input arguments for the compiled computation.
@@ -221,7 +221,7 @@ class Graph final : public tensorflow::XlaCompiledCpuFunction {
 
  private:
   // Number of buffers for the compiled computation.
-  static constexpr size_t kNumBuffers = 20;
+  static constexpr size_t kNumBuffers = 19;
 
   static const ::xla::cpu_function_runtime::BufferInfo* BufferInfos() {
     static const ::xla::cpu_function_runtime::BufferInfo
@@ -231,6 +231,7 @@ class Graph final : public tensorflow::XlaCompiledCpuFunction {
 ::xla::cpu_function_runtime::BufferInfo({1025ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({19ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({19ULL, ~0ULL}),
+::xla::cpu_function_runtime::BufferInfo({19ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({65536ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({16ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({18432ULL, ~0ULL}),
@@ -238,21 +239,19 @@ class Graph final : public tensorflow::XlaCompiledCpuFunction {
 ::xla::cpu_function_runtime::BufferInfo({1026ULL, 1ULL}),
 ::xla::cpu_function_runtime::BufferInfo({146ULL, 0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({81ULL, ~0ULL}),
-::xla::cpu_function_runtime::BufferInfo({80ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({65ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({16ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({16ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({16ULL, ~0ULL}),
 ::xla::cpu_function_runtime::BufferInfo({19ULL, ~0ULL}),
-::xla::cpu_function_runtime::BufferInfo({19ULL, ~0ULL}),
-::xla::cpu_function_runtime::BufferInfo({6849ULL, ~0ULL})
+::xla::cpu_function_runtime::BufferInfo({8929ULL, ~0ULL})
       };
     return kBufferInfos;
   }
 
   static const ::tensorflow::int32* ArgIndexToBufferIndex() {
     static constexpr ::tensorflow::int32 kArgIndexToBufferIndex[kNumArgs] = {
-10, 9
+11, 10
     };
     return kArgIndexToBufferIndex;
   }

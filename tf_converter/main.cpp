@@ -42,7 +42,7 @@ public:
         std::string prefix = "____" + className + "_x_";
 
         printf("// Generated, DO NOT EDIT!\n//\n\n");
-        printf("#pragma once\n#include \"indigo_utils.h\"\n\n");
+        printf("#pragma once\n#ifndef FOR_SANITY_CHECKER\n#include \"indigo_utils.h\"\n#endif\n\n");
         printf("void __xla___graph(\n"
                "\tvoid* result, const void* run_options,\n"
                "\tconst void** args, void** temps, void* profile_counters);\n\n");
