@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 		printf("Usage: ./format_output [time_series_len] [expert_cwnd] [path_to_store_formatted_output]\n");
 		return 1;
 	}
-	int time_series_len = stoi(std::string(argv[1]));
+	size_t time_series_len = stoi(std::string(argv[1]));
 	int expert_cwnd = stoi(std::string(argv[2]));
 	std::string output_file = argv[3];	
 	
