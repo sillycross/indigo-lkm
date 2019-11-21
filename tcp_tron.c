@@ -181,8 +181,9 @@ static void __update_cwnd_if_needed(struct indigo_state* indigo,
         kernel_fpu_end();
 
 		// we use min_rtt + delay_ewma as approximation for current rtt
+		// TODO: we use min_rtt for now because the above causes problem at startup
 		//
-        indigo->m_next_decision_timestamp += max_t(u32, (indigo->m_min_rtt_us + indigo->m_delay_ewma) / 3, 1000);
+        indigo->m_next_decision_timestamp += max_t(u32, (indigo->m_min_rtt_us/* + indigo->m_delay_ewma*/) / 3, 1000);
     }
 }
 
