@@ -14,10 +14,6 @@
 #include <asm-generic/int-ll64.h>
 #include <asm/fpu/api.h>
 
-// The interval we make decisions
-//
-#define INDIGO_DECISION_INTERVAL_US 10000
-
 static u32 g_socket_id = 0;
 
 struct indigo_state
@@ -165,8 +161,10 @@ static void __update_cwnd_if_needed(struct indigo_state* indigo,
     }
 
     // Make the decision if the timestamp has reached the decision point
+    // We make decision 3 times per RTT. 
+    // We will make decision for each decision point, even if we had missed it
     //
-    if (indigo->m_decision_timestamp_initialized && cur_timestamp_us >= indigo->m_next_decision_timestamp)
+    while (indigo->m_decision_timestamp_initialized && cur_timestamp_us >= indigo->m_next_decision_timestamp)
     {
         log_info.socket_id = indigo->m_socket_id;
         log_info.timestamp = cur_timestamp_us - indigo->m_first_timestamp;
@@ -182,7 +180,9 @@ static void __update_cwnd_if_needed(struct indigo_state* indigo,
         tp->snd_cwnd = nn_inference(&log_info, &indigo->nn, &features, tp->snd_cwnd);
         kernel_fpu_end();
 
-        indigo->m_next_decision_timestamp = cur_timestamp_us + INDIGO_DECISION_INTERVAL_US;
+		// we use min_rtt + delay_ewma as approximation for current rtt
+		//
+        indigo->m_next_decision_timestamp += max_t(u32, (indigo->m_min_rtt_us + indigo->m_delay_ewma) / 3, 1000);
     }
 }
 

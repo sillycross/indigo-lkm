@@ -9,7 +9,7 @@
 #define CWND_MIN_LIMIT 4
 #define CWND_MAX_LIMIT 1000000
 
-// Actions: ["/2.0", "-10.0", "+0.0", "+10.0", "*2.0"]
+// Actions: ["*0.8", "-5", "0", "+5", "*1.25"]
 //
 static int WARN_UNUSED __take_action(int cwnd, int action)
 {
@@ -19,12 +19,12 @@ static int WARN_UNUSED __take_action(int cwnd, int action)
     {
     case 0:
     {
-        new_cwnd = cwnd >> 1;
+        new_cwnd = cwnd - cwnd / 5;
         break;
     }
     case 1:
     {
-        new_cwnd = cwnd - 10;
+        new_cwnd = cwnd - 5;
         break;
     }
     case 2:
@@ -34,12 +34,12 @@ static int WARN_UNUSED __take_action(int cwnd, int action)
     }
     case 3:
     {
-        new_cwnd = cwnd + 10;
+        new_cwnd = cwnd + 5;
         break;
     }
     case 4:
     {
-        new_cwnd = cwnd * 2;
+        new_cwnd = cwnd + (cwnd >> 2);
         break;
     }
     default:
