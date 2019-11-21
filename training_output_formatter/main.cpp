@@ -121,18 +121,34 @@ int main(int argc, char** argv)
 	
 	printf("Processed %d time series. Writing output file..\n", (int)num_records);
 	
-	cnpy::npz_save(output_file.c_str(),
-	               "expert_actions",
-	               &all_expert_actions[0],
-	               {num_records, time_series_len} /*shape*/,
-	               "w" /*overwrite*/);
-	               
-	cnpy::npz_save(output_file.c_str(),
-	               "input_vectors",
-	               &all_input_vectors[0],
-	               {num_records, time_series_len, NUM_FEATURES} /*shape*/,
-	               "a" /*append*/);      
-	               
+	if (num_records == 0)
+	{
+		// Writing 0-dim nd-array results in corrupted npz file
+		// So we work around by writing a special variable 'empty' denoting that 
+		// we failed to collect any useful data
+		//
+		int dummy = 1;
+    	cnpy::npz_save(output_file.c_str(),
+    	               "empty",
+    	               &dummy,
+    	               {1} /*shape*/,
+    	               "w" /*overwrite*/);
+	}
+	else
+	{
+		cnpy::npz_save(output_file.c_str(),
+			           "expert_actions",
+			           &all_expert_actions[0],
+			           {num_records, time_series_len} /*shape*/,
+			           "w" /*overwrite*/);
+			           
+		cnpy::npz_save(output_file.c_str(),
+			           "input_vectors",
+			           &all_input_vectors[0],
+			           {num_records, time_series_len, NUM_FEATURES} /*shape*/,
+			           "a" /*append*/);      
+	}
+	           
 	printf("Done.\n");
 	          
 	return 0;
